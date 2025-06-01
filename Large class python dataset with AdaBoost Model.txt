@@ -1,0 +1,69 @@
+import numpy as np
+import pandas as pd
+from numpy import loadtxt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import StratifiedKFold
+# load data
+%matplotlib inline
+
+raw_data = pd.read_csv('E:\Python_LargeClassSmell_Dataset.csv')
+
+raw_data
+raw_data = pd.read_csv('E:\Python_LargeClassSmell_Dataset.csv', index_col = 0)
+
+
+def NormalizeData(data):
+     return (raw_data - np.min(raw_data)) / (np.max(raw_data) - np.min(raw_data))
+
+raw_data.sample(5)
+raw_data.head()
+#print(raw_data.columns)
+X = raw_data.iloc[:,0:10]  #independent columns
+y = raw_data.iloc[:,-1] 
+
+
+#apply SelectKBest class to extract top 10 best features
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+bestfeatures = SelectKBest(score_func=chi2, k=10)
+fit = bestfeatures.fit(X,y)
+dfscores = pd.DataFrame(fit.scores_)
+dfcolumns = pd.DataFrame(X.columns)
+#concat two dataframes for better visualization 
+featureScores = pd.concat([dfcolumns,dfscores],axis=1)
+featureScores.columns = ['Specs','Score']  #naming the dataframe columns
+print(featureScores.nlargest(12,'Score'))  #print 10 best features
+
+#Creating training and test splits
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10)
+#Performing Feature Scaling
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)
+
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+
+#logModel = AdaBoostClassifier(n_estimators = num_trees, random_state = seed)
+model = AdaBoostClassifier()
+model.fit(X_train, y_train)
+print(model)
+y_pred = model.predict(X_test)
+print(y_pred)
+from sklearn.metrics import classification_report
+print(classification_report(y_test,y_pred))
+from sklearn.metrics import roc_auc_score
+
+roc_auc_score(y, model.predict_proba(X)[:, 1])
+
+from sklearn.metrics import cohen_kappa_score
+print('cohen_kappa_score:',cohen_kappa_score(y_test, y_pred))
+
+from sklearn.metrics import matthews_corrcoef
+print('matthews_corrcoef:',matthews_corrcoef(y_test, y_pred))
