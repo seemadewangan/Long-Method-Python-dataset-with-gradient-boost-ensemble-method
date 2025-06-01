@@ -1,0 +1,84 @@
+Full code for code smell detection from Long method python dataset
+
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, auc
+from scipy.stats import randint as sp_randint
+from scipy.stats import uniform
+from sklearn import linear_model, datasets
+from sklearn.model_selection import RandomizedSearchCV
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+#from prettytable import PrettyTable
+%matplotlib inline
+import warnings
+warnings.filterwarnings("ignore")
+dataset = pd.read_csv('E:\Python_LongMethodSmell_Dataset.csv')
+#raw_data
+dataset = pd.read_csv('E:\Python_LongMethodSmell_Dataset.csv', index_col = 0)
+
+dataset.head()
+#Normalizing full dataframe
+def NormalizeData(data):
+     return (dataset - np.min(dataset)) / (np.max(dataset) - np.min(dataset))
+
+dataset.sample(5)
+
+X = dataset.iloc[:,0:10]  #independent columns
+y = dataset.iloc[:,-1]
+
+#apply SelectKBest class to extract top 10 best features
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+bestfeatures = SelectKBest(score_func=chi2, k=10)
+fit = bestfeatures.fit(X,y)
+dfscores = pd.DataFrame(fit.scores_)
+dfcolumns = pd.DataFrame(X.columns)
+#concat two dataframes for better visualization 
+featureScores = pd.concat([dfcolumns,dfscores],axis=1)
+featureScores.columns = ['Specs','Score']  #naming the dataframe columns
+print(featureScores.nlargest(10,'Score'))  #print 10 best features
+
+#Creating training and test splits
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10)
+#Performing Feature Scaling
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaler.fit(X_train)
+
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+import sklearn
+from sklearn.ensemble import GradientBoostingClassifier
+print(GradientBoostingClassifier())
+gbc = GradientBoostingClassifier()
+gbc.fit(X_train, y_train)
+
+
+y_pred = gbc.predict(X_test)
+
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+print(accuracy_score(y_test, y_pred))
+
+from sklearn.metrics import roc_auc_score
+
+roc_auc_score(y, gbc.predict_proba(X)[:, 1])  
+
+from sklearn.metrics import cohen_kappa_score
+print('cohen_kappa_score:',cohen_kappa_score(y_test, y_pred))
+
+from sklearn.metrics import matthews_corrcoef
+print('matthews_corrcoef:',matthews_corrcoef(y_test, y_pred))
+
+
+
+
